@@ -1,0 +1,41 @@
+#!/bin/bash
+# Predicts and evaluates checkpoints.
+
+set -eou pipefail
+
+# Arg 1: the checkpoint file to generate from.
+predict() {
+    local -r CHECKPOINT="$1"; shift
+    fairseq-generate \
+        --source-lang=graphemes \
+        --source-lang=phonemes \
+        --path="${CHECKPOINT}" \
+        --gen-subset=valid \
+        --beam=8 \
+        --no-progress-bar \
+        data-bin
+}
+
+
+dev_eval() {
+    for CHECKPOINT in checkpoints/*.pt; do
+        WER="${CHECKPOINT/\.pt/\.wer}"
+        ./score.py <(predict "${CHECKPOINT}") > "${WER}"
+    done
+}
+
+early_stop() {
+    # This grabs the checkpoint with the best result.
+    local -r BEST="$(grep -l \
+            $(sort -n -k2 checkpoints/*.wer | head -1 | cut -f2) \
+            checkpoints/*.wer)"
+    local -r CHECKPOINT="${BEST/\.wer/\.pt}"
+    ./score.py <(predict "${CHECKPOINT}")
+}
+
+main() {
+    dev_eval
+    early_stop
+}
+
+main

@@ -1,0 +1,66 @@
+#!/bin/bash
+# Trains the model.
+
+set -eou pipefail
+
+readonly SEED=272
+
+# Hyperparameters.
+# I like to put these at the top so I know where to find them.
+readonly ENCODER_LAYERS=4
+readonly ENCODER_ATTENTION_HEADS=4
+readonly ENCODER_EMBEDDING_SIZE=128
+readonly ENCODER_HIDDEN_SIZE=512
+readonly DECODER_LAYERS=4
+readonly DECODER_ATTENTION_HEADS=4
+readonly DECODER_EMBEDDING_SIZE=128
+readonly DECODER_HIDDEN_SIZE=512
+readonly ACTIVATION_FUNCTION=relu
+readonly DROPOUT=.2
+readonly BATCH_SIZE=512
+readonly CRITERION=label_smoothed_cross_entropy
+readonly LABEL_SMOOTHING=.1
+readonly CLIP_NORM=1
+readonly OPTIMIZER=adam
+readonly ADAM_BETAS='(.9, .98)'
+readonly LR=1e-3
+readonly LR_SCHEDULER=inverse_sqrt
+readonly WARMUP_INIT_LR=1e-7
+readonly WARMUP_UPDATES=1000
+readonly MAX_UPDATE=10000
+
+main() {
+    fairseq-train \
+        --arch=transformer \
+        --source-lang=graphemes \
+        --target-lang=phonemes \
+        --save-dir=checkpoints \
+        --share-decoder-input-output-embed \
+        --attention-dropout="${DROPOUT}" \
+        --activation-dropout="${DROPOUT}" \
+        --activation-fn="${ACTIVATION_FUNCTION}" \
+        --encoder-embed-dim="${ENCODER_EMBEDDING_SIZE}" \
+        --encoder-ffn-embed-dim="${ENCODER_HIDDEN_SIZE}" \
+        --encoder-layers="${ENCODER_LAYERS}" \
+        --encoder-attention-heads="${ENCODER_ATTENTION_HEADS}" \
+        --encoder-normalize-before \
+        --decoder-embed-dim="${DECODER_EMBEDDING_SIZE}" \
+        --decoder-ffn-embed-dim="${DECODER_HIDDEN_SIZE}" \
+        --decoder-layers="${DECODER_LAYERS}" \
+        --decoder-attention-heads="${DECODER_ATTENTION_HEADS}" \
+        --decoder-normalize-before \
+        --criterion="${CRITERION}" \
+        --label-smoothing="${LABEL_SMOOTHING}" \
+        --clip-norm="${CLIP_NORM}" \
+        --optimizer="${OPTIMIZER}" \
+        --adam-betas="${ADAM_BETAS}" \
+        --lr="${LR}" \
+        --lr-scheduler="${LR_SCHEDULER}" \
+        --warmup-init-lr="${WARMUP_INIT_LR}" \
+        --warmup-updates="${WARMUP_UPDATES}" \
+        --max-update="${MAX_UPDATE}" \
+        --batch-size="${BATCH_SIZE}" \
+        data-bin
+}
+
+main

@@ -1,0 +1,64 @@
+#!/bin/bash
+# Preprocesses data.
+
+set -eou pipefail
+
+readonly SEED=272
+
+step1() {
+    pip install fairseq==0.10.1
+}
+
+step2() {
+    curl -O \
+        https://raw.githubusercontent.com/kylebgorman/wikipron-extras/master/data/fra_lexique/lexicon.tsv
+}
+
+step3() {
+    ./filter.py lexicon.tsv > filtered.tsv
+}
+
+step4() {
+    ./split.py \
+        --seed="${SEED}" \
+        --input_path=filtered.tsv \
+        --train_path=train.tsv \
+        --dev_path=dev.tsv \
+        --test_path=test.tsv
+}
+
+step5() {
+    for MODE in train dev test; do
+        cut -f1 "${MODE}.tsv" | sed 's/./& /g' > "${MODE}.graphemes"
+        cut -f2 "${MODE}.tsv" | sed 's/./& /g' > "${MODE}.phonemes"
+    done
+}
+
+step6() {
+    rm -rf data-bin
+    mkdir -p data-bin
+    fairseq-preprocess \
+        --source-lang=graphemes \
+        --target-lang=phonemes \
+        --trainpref=train \
+        --validpref=dev \
+        --testpref=test \
+        --destdir=data-bin \
+        --tokenizer=space  
+}
+
+cleanup() {
+    rm -f *.tsv *.phonemes *.graphemes
+}
+
+main() {
+    step1
+    step2
+    step3
+    step4
+    step5
+    step6
+    cleanup
+}
+
+main
