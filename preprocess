@@ -6,7 +6,7 @@ set -eou pipefail
 readonly SEED=272
 
 step1() {
-    pip install fairseq==0.10.1
+    pip install --upgrade fairseq==0.10.1
 }
 
 step2() {
